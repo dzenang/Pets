@@ -58,4 +58,17 @@
 
     <!-- Label for dropdown menu option if the pet is female [CHAR LIMIT=20] -->
     <string name="gender_female">Female</string>
+
+    <!-- Toast message for newly saved pet [CHAR LIMIT=20] -->
+    <string name="pet_saved">Pet saved</string>
+
+    <!-- Toast message for error with saving pet [CHAR LIMIT=20] -->
+    <string name="pet_save_error">Error with saving pet</string>
+
+    <!-- Title text for the empty view, which describes the empty dog house image [CHAR LIMIT=50] -->
+    <string name="empty_view_title_text">It\'s a bit lonely here...</string>
+
+    <!-- Subtitle text for the empty view that prompts the user to add a pet [CHAR LIMIT=50] -->
+    <string name="empty_view_subtitle_text">Get started by adding a pet</string>
+
 </resources>
