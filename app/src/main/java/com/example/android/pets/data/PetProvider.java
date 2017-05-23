@@ -6,6 +6,7 @@ import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -80,6 +81,10 @@ public class PetProvider extends ContentProvider {
                 throw new IllegalArgumentException("Cannot query unknown URI " + uri);
         }
 
+        // Setting notification uri for cursor before returning it
+        // uri is content://com.example.android.pets/pets
+        retCursor.setNotificationUri(getContext().getContentResolver(), uri);
+
         return retCursor;
     }
 
@@ -140,30 +145,42 @@ public class PetProvider extends ContentProvider {
         // If rowID is -1 then insertion failed, log error and return null
         if(rowId == -1) {
             Log.e(TAG, "Failed to insert row into " + uri);
-            return null;
+            throw new SQLiteException("Problem while inserting into uri: " + uri);
         }
+
+        // Notify all listeners of change
+        Uri itemUri = ContentUris.withAppendedId(uri, rowId);
+        getContext().getContentResolver().notifyChange(itemUri, null);
+
         // Return new URI with rowID of newly inserted pet appended at the end
-        return ContentUris.withAppendedId(uri, rowId);
+        return itemUri;
     }
 
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
 
         SQLiteDatabase database = mDbHelper.getWritableDatabase();
+        int deleteCount;
 
         int match = sUriMatcher.match(uri);
         switch (match) {
             case PETS:
-                return database.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+                deleteCount = database.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+                break;
             case PET_ID:
                 selection = PetEntry._ID + "=?";
                 selectionArgs = new String[] {String.valueOf(ContentUris.parseId(uri))};
-                return  database.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+                deleteCount = database.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+                break;
             default:
                 throw new IllegalArgumentException("Delete is not supported for " + uri);
         }
 
-
+        // Notify listeners for change
+        if (deleteCount > 0) {
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
+        return deleteCount;
     }
 
     @Override
@@ -218,9 +235,10 @@ public class PetProvider extends ContentProvider {
 
         // If updatedRowsNum is greater then 0, return it, otherwise return 0 and log error
         if(updatedRowsNum > 0) {
-            return updatedRowsNum;
+            // Notify all listeners for change
+            getContext().getContentResolver().notifyChange(uri, null);
         }
         Log.e(TAG, "Failed to update values for " + uri);
-        return 0;
+        return updatedRowsNum;
     }
 }
